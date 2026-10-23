@@ -243,4 +243,30 @@ world
 [View documents](command:extension.lua.doc?["en-us/54/manual.html/pdf-arg"])"#;
         assert_eq!(description2.get_description_text(), expected2);
     }
+
+    #[test]
+    fn test_doc_binary_type_operators() {
+        use crate::{LuaDocBinaryType, LuaTypeBinaryOperator};
+        for (code, op) in [
+            (
+                "---@type A | B
+local x",
+                LuaTypeBinaryOperator::Union,
+            ),
+            (
+                "---@type A & B
+local x",
+                LuaTypeBinaryOperator::Intersection,
+            ),
+            (
+                "---@type A in B
+local x",
+                LuaTypeBinaryOperator::In,
+            ),
+        ] {
+            let binary = get_ast_node::<LuaDocBinaryType>(code);
+            let token = binary.get_op_token();
+            assert_eq!(token.map(|token| token.get_op()), Some(op), "{code}");
+        }
+    }
 }

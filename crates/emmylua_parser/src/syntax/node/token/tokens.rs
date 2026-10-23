@@ -622,7 +622,7 @@ impl LuaAstToken for LuaDocTypeBinaryToken {
         kind == LuaTokenKind::TkDocOr
             || kind == LuaTokenKind::TkDocAnd
             || kind == LuaTokenKind::TkDocExtends
-            || kind == LuaTokenKind::TkDocIn
+            || kind == LuaTokenKind::TkIn
             || kind == LuaTokenKind::TkDocContinueOr
             || kind == LuaTokenKind::TkPlus
             || kind == LuaTokenKind::TkMinus
