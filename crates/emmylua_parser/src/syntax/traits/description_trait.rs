@@ -24,6 +24,49 @@ pub trait LuaDocDescriptionOwner: LuaAstNode {
     }
 }
 
+/// For `@param` and `@return`, which have no description-above form: the description on the tag's
+/// line, else on the lines below it (`---@param x integer` + `--- The x.`). Lines below that a
+/// following `@field` takes as its description stay with the field.
+pub(crate) fn inline_or_below_description(node: &LuaSyntaxNode) -> Option<LuaDocDescription> {
+    find_inline_description(node)
+        .or_else(|| find_description_below(node))
+        .and_then(LuaDocDescription::cast)
+}
+
+fn find_description_below(node: &LuaSyntaxNode) -> Option<LuaSyntaxNode> {
+    let mut next_sibling = node.next_sibling_or_token();
+    let mut meet_end_of_line = false;
+    let description = loop {
+        let sibling = next_sibling?;
+        match sibling.kind() {
+            LuaKind::Token(LuaTokenKind::TkWhitespace | LuaTokenKind::TkDocContinue) => {}
+            LuaKind::Token(LuaTokenKind::TkEndOfLine) => {
+                if meet_end_of_line {
+                    return None;
+                }
+                meet_end_of_line = true;
+            }
+            LuaKind::Syntax(LuaSyntaxKind::DocDescription) if meet_end_of_line => {
+                break sibling.into_node()?;
+            }
+            _ => return None,
+        }
+        next_sibling = sibling.next_sibling_or_token();
+    };
+    let mut next_sibling = description.next_sibling_or_token();
+    while let Some(sibling) = next_sibling {
+        match sibling.kind() {
+            LuaKind::Token(
+                LuaTokenKind::TkWhitespace | LuaTokenKind::TkEndOfLine | LuaTokenKind::TkDocStart,
+            ) => {}
+            LuaKind::Syntax(LuaSyntaxKind::DocTagField) => return None,
+            _ => break,
+        }
+        next_sibling = sibling.next_sibling_or_token();
+    }
+    Some(description)
+}
+
 fn find_attached_description(node: &LuaSyntaxNode) -> Option<LuaSyntaxNode> {
     let mut prev_sibling = node.prev_sibling_or_token();
     let mut meet_end_of_line = false;

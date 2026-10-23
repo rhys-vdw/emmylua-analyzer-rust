@@ -243,4 +243,63 @@ world
 [View documents](command:extension.lua.doc?["en-us/54/manual.html/pdf-arg"])"#;
         assert_eq!(description2.get_description_text(), expected2);
     }
+
+    #[test]
+    fn test_doc_param_and_return_description_below() {
+        use crate::{LuaComment, LuaDocDescriptionOwner, LuaDocTag};
+        let comment = get_ast_node::<LuaComment>(
+            "---@param x integer
+--- The x, below.
+---@param y integer The y.
+---@return string
+--- The result, below.
+local function f(x, y) end",
+        );
+        let mut texts = Vec::new();
+        for tag in comment.get_doc_tags() {
+            let text = match &tag {
+                LuaDocTag::Param(param) => param.get_description(),
+                LuaDocTag::Return(ret) => {
+                    let names: Vec<_> = ret
+                        .get_info_list()
+                        .into_iter()
+                        .map(|(_, name)| name)
+                        .collect();
+                    assert!(
+                        names.iter().all(Option::is_none),
+                        "no return name from the next line"
+                    );
+                    ret.get_description()
+                }
+                _ => continue,
+            };
+            texts.push(text.map(|d| d.get_description_text().trim().to_string()));
+        }
+        assert_eq!(
+            texts,
+            [
+                Some("The x, below.".to_string()),
+                Some("The y.".to_string()),
+                Some("The result, below.".to_string()),
+            ]
+        );
+
+        let comment = get_ast_node::<LuaComment>(
+            "---@param x integer
+--- About z.
+---@field z integer
+local t",
+        );
+        let param = comment
+            .get_doc_tags()
+            .find_map(|tag| match tag {
+                LuaDocTag::Param(param) => Some(param),
+                _ => None,
+            })
+            .unwrap();
+        assert!(
+            param.get_description().is_none(),
+            "text above a field belongs to the field"
+        );
+    }
 }

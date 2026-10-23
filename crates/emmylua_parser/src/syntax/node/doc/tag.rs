@@ -1,10 +1,13 @@
 use crate::{
     BinaryOperator, LuaAstChildren, LuaAstToken, LuaAstTokenChildren, LuaBinaryOpToken,
-    LuaDocAttributeUse, LuaDocVersionNumberToken, LuaDocVisibilityToken, LuaExpr, LuaGeneralToken,
-    LuaKind, LuaNameToken, LuaNumberToken, LuaPathToken, LuaStringToken, LuaSyntaxNode,
-    LuaTokenKind, LuaVersionCondition,
+    LuaDocAttributeUse, LuaDocDescription, LuaDocVersionNumberToken, LuaDocVisibilityToken,
+    LuaExpr, LuaGeneralToken, LuaKind, LuaNameToken, LuaNumberToken, LuaPathToken, LuaStringToken,
+    LuaSyntaxNode, LuaTokenKind, LuaVersionCondition,
     kind::LuaSyntaxKind,
-    syntax::{LuaDocDescriptionOwner, traits::LuaAstNode},
+    syntax::{
+        LuaDocDescriptionOwner,
+        traits::{LuaAstNode, inline_or_below_description},
+    },
 };
 
 use super::{
@@ -498,7 +501,11 @@ impl LuaAstNode for LuaDocTagParam {
     }
 }
 
-impl LuaDocDescriptionOwner for LuaDocTagParam {}
+impl LuaDocDescriptionOwner for LuaDocTagParam {
+    fn get_description(&self) -> Option<LuaDocDescription> {
+        inline_or_below_description(self.syntax())
+    }
+}
 
 impl LuaDocTagParam {
     pub fn get_name_token(&self) -> Option<LuaNameToken> {
@@ -547,7 +554,11 @@ impl LuaAstNode for LuaDocTagReturn {
     }
 }
 
-impl LuaDocDescriptionOwner for LuaDocTagReturn {}
+impl LuaDocDescriptionOwner for LuaDocTagReturn {
+    fn get_description(&self) -> Option<LuaDocDescription> {
+        inline_or_below_description(self.syntax())
+    }
+}
 
 impl LuaDocTagReturn {
     pub fn get_first_type(&self) -> Option<LuaDocType> {
