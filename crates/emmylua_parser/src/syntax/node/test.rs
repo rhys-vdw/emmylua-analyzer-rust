@@ -243,4 +243,29 @@ world
 [View documents](command:extension.lua.doc?["en-us/54/manual.html/pdf-arg"])"#;
         assert_eq!(description2.get_description_text(), expected2);
     }
+
+    #[test]
+    fn test_doc_nullable_type_continues() {
+        use crate::{LuaDocDescriptionOwner, LuaDocTagParam, LuaDocType};
+        let binary = get_ast_node::<crate::LuaDocBinaryType>(
+            "---@type string?|number
+local x",
+        );
+        let (left, _) = binary.get_types().unwrap();
+        assert!(matches!(left, LuaDocType::Nullable(_)));
+
+        let array = get_ast_node::<crate::LuaDocArrayType>(
+            "---@type string?[]
+local x",
+        );
+        assert!(matches!(array.get_type(), Some(LuaDocType::Nullable(_))));
+
+        let param = get_ast_node::<LuaDocTagParam>(
+            "---@param x string? The x.
+local function f(x) end",
+        );
+        assert!(matches!(param.get_type(), Some(LuaDocType::Nullable(_))));
+        let description = param.get_description().unwrap().get_description_text();
+        assert_eq!(description.trim(), "The x.");
+    }
 }

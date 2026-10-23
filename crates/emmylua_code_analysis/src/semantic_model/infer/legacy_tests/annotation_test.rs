@@ -363,4 +363,27 @@ mod test {
         "#,
         ));
     }
+
+    #[test]
+    fn test_nullable_followed_by_union_or_array() {
+        let mut ws = VirtualWorkspace::new();
+
+        ws.def(
+            r#"
+        ---@type string?|number
+        a = nil
+
+        ---@type string?[]
+        b = {}
+        "#,
+        );
+
+        let a = ws.expr_ty("a");
+        let b = ws.expr_ty("b");
+        assert_eq!(ws.humanize_type(a), "(string|number)?");
+        let crate::LuaType::Array(array) = &b else {
+            panic!("expected an array, got {b:?}");
+        };
+        assert_eq!(ws.humanize_type(array.get_base().clone()), "string?");
+    }
 }

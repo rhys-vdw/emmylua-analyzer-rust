@@ -19,11 +19,13 @@ pub fn parse_type(p: &mut LuaDocParser) -> DocParseResult {
 
     loop {
         match p.current_token() {
-            // <type>?
+            // <type>?, which can go on: <type>?[] and <type>? | <type>
             LuaTokenKind::TkDocQuestion => {
                 let m = cm.precede(p, LuaSyntaxKind::TypeNullable);
                 p.bump();
-                cm = m.complete(p);
+                let nullable = m.complete(p);
+                cm = parse_suffixed_type(p, nullable)?;
+                parse_binary_operator(p, &mut cm, 0)?;
             }
             // <type> extends <type> and <true type> or <false type>
             LuaTokenKind::TkDocExtends => {
